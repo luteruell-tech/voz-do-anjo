@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Voz do Anjo">
+<meta name="theme-color" content="#B8860B">
+
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+<title>Voz do Anjo — Mensagens que tocam a alma</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════ */
+*,*::before,*::after{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  width:100%;
+  min-height:100%;
+  font-family:'Nunito',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  background:#FEFAF3;
+  color:#1C1A14;
+  font-size:16px;
+  line-height:1.5;
+  word-break:normal;
+  overflow-wrap:break-word;
+  hyphens:none;
+}
+
+body{
+  overflow-x:hidden;
+}
+
+/* ═══════════════════════════════════════════
+   VARIÁVEIS
+═══════════════════════════════════════════ */
+:root{
+  --gold:#B8860B;
+  --gold2:#D4A017;
+  --gold3:#F0C84A;
+  --cream:#FEFAF3;
+  --dark:#1C1A14;
+  --mid:#4A4535;
+  --soft:#9A9080;
+  --glow:rgba(212,160,23,.3);
+  --border:rgba(184,134,11,.15);
+  --safe-top:env(safe-area-inset-top, 0px);
+  --safe-bot:env(safe-area-inset-bottom, 0px);
+  --ease:cubic-bezier(.4, 0, .2, 1);
+  --ease-soft:cubic-bezier(.25, .8, .25, 1);
+  --ease-bounce:cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* ═══════════════════════════════════════════
+   ANIMAÇÕES (KEYFRAMES)
+═══════════════════════════════════════════ */
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+
+@keyframes slideUp{
+  from{
+    opacity:0;
+    transform:translateY(30px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+@keyframes slideDown{
+  from{
+    opacity:0;
+    transform:translateY(-20px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+@keyframes scaleIn{
+  from{
+    opacity:0;
+    transform:scale(.85);
+  }
+  to{
+    opacity:1;
+    transform:scale(1);
+  }
+}
+
+@keyframes shimmer{
+  0%,100%{box-shadow:0 8px 24px var(--glow);}
+  50%{box-shadow:0 8px 32px rgba(212,160,23,.5);}
+}
+
+@keyframes pulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+}
+
+@keyframes glow{
+  0%,100%{filter:brightness(1);}
+  50%{filter:brightness(1.1);}
+}
+
+/* ═══════════════════════════════════════════
+   APP / SCREENS — Transições suaves
+═══════════════════════════════════════════ */
+#app{
+  width:100%;
+  min-height:100vh;
+  min-height:100dvh;
+  background:var(--cream);
+  position:relative;
+}
+
+.screen{
+  display:none;
+  width:100%;
+  min-height:100vh;
+  min-height:100dvh;
+  flex-direction:column;
+  align-items:center;
+  padding:calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bot));
+  background:var(--cream);
+  opacity:0;
+  transform:translateY(20px);
+  transition:opacity .55s var(--ease-soft), transform .55s var(--ease-soft);
+}
+
+.screen.active{
+  display:flex;
+  opacity:1;
+  transform:translateY(0);
+  animation:fadeIn .6s var(--ease-soft);
+}
+
+.screen-content{
+  width:100%;
+  max-width:520px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  flex:1;
+}
+
+/* Anima elementos filhos com delay escalonado */
+.screen.active .logo-container{animation:scaleIn .8s var(--ease-bounce) .1s both;}
+.screen.active .app-title{animation:slideUp .7s var(--ease-soft) .25s both;}
+.screen.active .app-tagline{animation:slideUp .7s var(--ease-soft) .4s both;}
+.screen.active .btn-nav{animation:slideUp .7s var(--ease-soft) .55s both, shimmer 3s ease-in-out 1.5s infinite;}
+
+.screen.active .content-section h2{animation:slideDown .6s var(--ease-soft) .1s both;}
+.screen.active .divider{animation:fadeIn .8s var(--ease-soft) .3s both;}
+.screen.active .content-section p{animation:slideUp .6s var(--ease-soft) both;}
+.screen.active .content-section p:nth-of-type(1){animation-delay:.25s;}
+.screen.active .content-section p:nth-of-type(2){animation-delay:.35s;}
+.screen.active .content-section p:nth-of-type(3){animation-delay:.45s;}
+.screen.active .content-section p:nth-of-type(4){animation-delay:.55s;}
+.screen.active .content-section p:nth-of-type(5){animation-delay:.65s;}
+.screen.active .content-section p:nth-of-type(6){animation-delay:.75s;}
+.screen.active .content-section p:nth-of-type(7){animation-delay:.85s;}
+
+.screen.active .nav-buttons{animation:slideUp .6s var(--ease-soft) .8s both;}
+.screen.active .agenda-form{animation:slideUp .6s var(--ease-soft) .25s both;}
+.screen.active .success-icon{animation:scaleIn .8s var(--ease-bounce) .1s both, pulse 2.5s ease-in-out 1s infinite;}
+.screen.active .confirmation-text{animation:slideUp .6s var(--ease-soft) .35s both;}
+.screen.active .random-player{animation:slideUp .6s var(--ease-soft) .55s both;}
+
+/* ═══════════════════════════════════════════
+   TELA 1 — SPLASH
+═══════════════════════════════════════════ */
+#screen1{
+  justify-content:center;
+  text-align:center;
+}
+
+.logo-container{
+  width:140px;
+  height:140px;
+  border-radius:32px;
+  overflow:hidden;
+  box-shadow:0 20px 50px rgba(184,134,11,.25);
+  margin-bottom:24px;
+  transition:transform .5s var(--ease-soft), box-shadow .5s var(--ease-soft);
+}
+
+.logo-container:hover,
+.logo-container:active{
+  transform:scale(1.04) rotate(-2deg);
+  box-shadow:0 24px 60px rgba(184,134,11,.4);
+}
+
+.logo-container img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.app-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.6rem;
+  font-weight:700;
+  color:var(--gold);
+  line-height:1;
+  letter-spacing:0.5px;
+  margin-bottom:8px;
+}
+
+.app-tagline{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:1.1rem;
+  color:var(--mid);
+  line-height:1.4;
+  margin-bottom:32px;
+  padding:0 16px;
+}
+
+/* ═══════════════════════════════════════════
+   BOTÃO PRINCIPAL — efeito ripple
+═══════════════════════════════════════════ */
+.btn-nav{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  background:linear-gradient(135deg, var(--gold), var(--gold3));
+  color:white;
+  text-decoration:none;
+  padding:16px 36px;
+  border-radius:50px;
+  font-size:0.95rem;
+  font-weight:700;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 8px 24px var(--glow);
+  font-family:'Nunito',sans-serif;
+  -webkit-user-select:none;
+  user-select:none;
+  overflow:hidden;
+  transition:transform .25s var(--ease-soft), box-shadow .35s var(--ease-soft), filter .3s ease;
+}
+
+.btn-nav::before{
+  content:'';
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:0;
+  height:0;
+  border-radius:50%;
+  background:rgba(255,255,255,.4);
+  transform:translate(-50%,-50%);
+  transition:width .6s var(--ease-soft), height .6s var(--ease-soft), opacity .6s;
+  opacity:0;
+  pointer-events:none;
+}
+
+.btn-nav:active::before{
+  width:300px;
+  height:300px;
+  opacity:1;
+  transition:width .4s var(--ease-soft), height .4s var(--ease-soft), opacity .1s;
+}
+
+.btn-nav:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 32px rgba(212,160,23,.45);
+  filter:brightness(1.05);
+}
+
+.btn-nav:active{
+  transform:translateY(0) scale(.97);
+  transition:transform .1s var(--ease);
+}
+
+/* ═══════════════════════════════════════════
+   TELAS DE CONTEÚDO
+═══════════════════════════════════════════ */
+.content-section{
+  width:100%;
+  text-align:left;
+  padding:16px 0 8px;
+}
+
+.content-section h2{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.75rem;
+  font-weight:600;
+  color:var(--dark);
+  line-height:1.15;
+  margin-bottom:16px;
+  text-align:center;
+}
+
+.content-section h2 em{
+  color:var(--gold);
+  font-style:normal;
+}
+
+.content-section p{
+  font-size:0.95rem;
+  color:var(--mid);
+  line-height:1.65;
+  margin-bottom:14px;
+  text-align:left;
+}
+
+.content-section p strong{
+  color:var(--dark);
+}
+
+.divider{
+  border-top:1px solid rgba(184,134,11,.2);
+  border-bottom:1px solid rgba(184,134,11,.2);
+  padding:14px 12px;
+  margin:14px 0;
+  font-style:italic;
+  font-size:0.88rem;
+  color:var(--mid);
+  line-height:1.5;
+  text-align:center;
+}
+
+.heart-em{
+  color:var(--gold);
+}
+
+/* ═══════════════════════════════════════════
+   FORMULÁRIO DE AGENDA
+═══════════════════════════════════════════ */
+.agenda-form{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  width:100%;
+  margin-top:8px;
+}
+
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.form-group label{
+  font-size:0.78rem;
+  font-weight:700;
+  color:var(--gold);
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+
+.form-group input,
+.form-group select{
+  padding:14px 16px;
+  border:2px solid rgba(184,134,11,.2);
+  border-radius:12px;
+  font-size:1rem;
+  font-family:'Nunito',sans-serif;
+  color:var(--dark);
+  background:rgba(255,255,255,.7);
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  transition:border-color .3s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease), transform .2s var(--ease);
+}
+
+.form-group input:focus,
+.form-group select:focus{
+  outline:none;
+  border-color:var(--gold);
+  background:white;
+  box-shadow:0 0 0 4px rgba(184,134,11,.12);
+  transform:translateY(-1px);
+}
+
+.form-group select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23B8860B' d='M8 12L2 6h12z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:40px;
+}
+
+.switch-group{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  background:rgba(255,255,255,.5);
+  border-radius:12px;
+  border:1px solid rgba(184,134,11,.15);
+  transition:background .3s var(--ease);
+}
+
+.switch-label{
+  font-size:0.92rem;
+  color:var(--dark);
+  flex:1;
+}
+
+.toggle-switch{
+  position:relative;
+  width:48px;
+  height:26px;
+  background:rgba(184,134,11,.2);
+  border-radius:13px;
+  cursor:pointer;
+  transition:background .4s var(--ease-soft);
+  flex-shrink:0;
+}
+
+.toggle-switch::after{
+  content:'';
+  position:absolute;
+  top:2px;
+  left:2px;
+  width:22px;
+  height:22px;
+  background:white;
+  border-radius:11px;
+  transition:left .35s var(--ease-bounce), box-shadow .3s var(--ease);
+  box-shadow:0 2px 5px rgba(0,0,0,.15);
+}
+
+.toggle-switch.on{
+  background:var(--gold);
+}
+
+.toggle-switch.on::after{
+  left:24px;
+  box-shadow:0 2px 8px rgba(184,134,11,.4);
+}
+
+.toggle-switch:active::after{
+  width:26px;
+}
+
+/* ═══════════════════════════════════════════
+   BOTÕES DE NAVEGAÇÃO — efeito ripple
+═══════════════════════════════════════════ */
+.nav-buttons{
+  display:flex;
+  gap:10px;
+  width:100%;
+  margin-top:20px;
+  padding-top:8px;
+}
+
+.btn-prev,
+.btn-next{
+  position:relative;
+  flex:1;
+  padding:14px 16px;
+  border:none;
+  border-radius:50px;
+  font-size:0.9rem;
+  font-weight:700;
+  cursor:pointer;
+  font-family:'Nunito',sans-serif;
+  -webkit-user-select:none;
+  user-select:none;
+  overflow:hidden;
+  transition:transform .25s var(--ease-soft), box-shadow .35s var(--ease-soft), background .3s ease, filter .3s ease;
+}
+
+.btn-prev::before,
+.btn-next::before{
+  content:'';
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:0;
+  height:0;
+  border-radius:50%;
+  background:rgba(255,255,255,.35);
+  transform:translate(-50%,-50%);
+  opacity:0;
+  pointer-events:none;
+  transition:width .5s var(--ease-soft), height .5s var(--ease-soft), opacity .5s;
+}
+
+.btn-prev:active::before,
+.btn-next:active::before{
+  width:280px;
+  height:280px;
+  opacity:1;
+  transition:width .4s var(--ease-soft), height .4s var(--ease-soft), opacity .1s;
+}
+
+.btn-prev{
+  background:rgba(184,134,11,.08);
+  color:var(--gold);
+  border:1px solid rgba(184,134,11,.25);
+}
+
+.btn-prev:hover{
+  background:rgba(184,134,11,.15);
+  transform:translateY(-1px);
+}
+
+.btn-next{
+  background:linear-gradient(135deg, var(--gold), var(--gold3));
+  color:white;
+  box-shadow:0 6px 18px var(--glow);
+}
+
+.btn-next:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 28px rgba(212,160,23,.45);
+  filter:brightness(1.05);
+}
+
+.btn-prev:active,
+.btn-next:active{
+  transform:translateY(0) scale(.97);
+  transition:transform .1s var(--ease);
+}
+
+/* ═══════════════════════════════════════════
+   TELA DE CONFIRMAÇÃO
+═══════════════════════════════════════════ */
+.confirmation-content{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+  text-align:center;
+  width:100%;
+  padding-top:20px;
+}
+
+.success-icon{
+  width:80px;
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg, var(--gold), var(--gold3));
+  border-radius:50%;
+  box-shadow:0 14px 36px var(--glow);
+  font-size:40px;
+  color:white;
+}
+
+.confirmation-text h2{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.85rem;
+  font-weight:600;
+  color:var(--dark);
+  margin-bottom:12px;
+}
+
+.confirmation-text p{
+  color:var(--mid);
+  font-size:0.95rem;
+  line-height:1.6;
+  margin-bottom:6px;
+}
+
+.confirmation-text .small{
+  font-size:0.85rem;
+  color:var(--soft);
+  margin-top:4px;
+}
+
+.random-player{
+  width:100%;
+  padding:18px 16px;
+  background:rgba(255,255,255,.6);
+  border-radius:14px;
+  border:1.5px solid rgba(184,134,11,.2);
+  margin-top:8px;
+  text-align:center;
+  transition:transform .3s var(--ease-soft), box-shadow .3s var(--ease-soft);
+}
+
+.random-player:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(184,134,11,.15);
+}
+
+.random-player .player-title{
+  font-size:0.78rem;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  color:var(--gold);
+  font-weight:700;
+  margin-bottom:10px;
+  line-height:1.4;
+}
+
+.random-player audio{
+  width:100%;
+  margin-top:6px;
+}
+
+#noAudioMsg{
+  text-align:center;
+  color:var(--soft);
+  font-size:0.88rem;
+  margin-top:6px;
+}
+
+/* ═══════════════════════════════════════════
+   AJUSTES PEQUENOS DEVICES
+═══════════════════════════════════════════ */
+@media(max-width:380px){
+  .app-title{font-size:2.2rem;}
+  .app-tagline{font-size:1rem;}
+  .logo-container{width:120px;height:120px;border-radius:28px;}
+  .content-section h2{font-size:1.55rem;}
+  .content-section p{font-size:0.9rem;}
+  .confirmation-text h2{font-size:1.6rem;}
+  .btn-nav{padding:14px 28px;font-size:0.9rem;}
+}
+
+@media(max-height:600px){
+  .logo-container{width:110px;height:110px;margin-bottom:16px;}
+  .app-title{font-size:2.1rem;}
+  .app-tagline{margin-bottom:20px;}
+}
+
+/* respeitar preferência por menos movimento */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
+
+/* foco visível (acessibilidade) */
+.btn-nav:focus-visible,
+.btn-prev:focus-visible,
+.btn-next:focus-visible{
+  outline:3px solid var(--gold);
+  outline-offset:3px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ╔════════ TELA 1: SPLASH ════════╗ -->
+<div id="screen1" class="screen active">
+  <div class="logo-container">
+    <img src="/icon-192.png" alt="Voz do Anjo" width="140" height="140">
+  </div>
+  <h1 class="app-title">Voz do Anjo</h1>
+  <p class="app-tagline">Mensagens que tocam a alma</p>
+  <button class="btn-nav" onclick="goToScreen(2)">Acessar Voz do Anjo →</button>
+</div>
+
+<!-- ╔════════ TELA 2: COMO SURGIU ════════╗ -->
+<div id="screen2" class="screen">
+  <div class="screen-content">
+    <div class="content-section">
+      <h2>Como surgiu o <em>Voz do Anjo</em></h2>
+
+      <div class="divider">
+        Algumas mensagens são escritas por pessoas,<br>
+        mas chegam até nós como resposta de Deus.
+      </div>
+
+      <p>
+        O <strong>Voz do Anjo</strong> nasceu da experiência de descobrir que uma única mensagem pode mudar o rumo de um dia.
+      </p>
+
+      <p>
+        Às vezes, de uma vida inteira.
+      </p>
+
+      <p>
+        Inspirado por palavras que chegaram no momento exato — trazendo força, acolhimento e fé — este aplicativo foi criado para compartilhar essa mesma esperança com outras pessoas.
+      </p>
+
+      <p>
+        Os áudios aqui preservam sua essência original, porque nasceram de um gesto verdadeiro de carinho e cuidado.
+      </p>
+
+      <p>
+        <strong>Nasceu do desejo de que o conforto que um dia encontrou um coração, possa agora encontrar muitos outros.</strong>
+      </p>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-prev" onclick="goToScreen(1)">← Voltar</button>
+      <button class="btn-next" onclick="goToScreen(3)">Próximo →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔════════ TELA 3: A INSPIRAÇÃO ════════╗ -->
+<div id="screen3" class="screen">
+  <div class="screen-content">
+    <div class="content-section">
+      <h2><em>A Inspiração</em></h2>
+
+      <p style="text-align:center;font-style:italic;font-weight:700;color:var(--gold);margin-bottom:16px;">
+        — Katia Daniele
+      </p>
+
+      <p>
+        Dani, sua voz é um presente divino que merece alcançar muitas vidas.
+      </p>
+
+      <p>
+        Você é um instrumento precioso de Deus, forjado em meio a desafios.
+      </p>
+
+      <p>
+        Transformou dor em força, cuidado em missão e fé em inspiração.
+      </p>
+
+      <p>
+        <strong>Voz do Anjo</strong> é uma homenagem à sua vida, ao seu amor e ao cuidado que Deus colocou em você para tocar outras vidas.
+      </p>
+
+      <p>
+        Que cada mensagem carregue a mesma luz que um dia chegou a mim: <strong>Fé, regozijo, força e amor.</strong>
+      </p>
+
+      <p>
+        Glorifico a Deus por sua vida e conte com a minha, sempre.
+      </p>
+
+      <p style="text-align:center;margin-top:8px;">
+        <strong class="heart-em">Amo você. ❤️</strong>
+      </p>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-prev" onclick="goToScreen(2)">← Voltar</button>
+      <button class="btn-next" onclick="goToScreen(4)">Próximo →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔════════ TELA 4: CONFIGURAR AGENDA ════════╗ -->
+<div id="screen4" class="screen">
+  <div class="screen-content">
+    <div class="content-section">
+      <h2>Configure sua <em>Agenda</em></h2>
+      <p style="text-align:center;">
+        Escolha o dia e o horário em que você deseja receber a mensagem diária.
+      </p>
+    </div>
+
+    <form class="agenda-form" onsubmit="saveAndGoToConfirmation(event)">
+      <div class="form-group">
+        <label for="daySelect">Dia da Semana</label>
+        <select id="daySelect" name="daySelect" required>
+          <option value="">Selecione um dia</option>
+          <option value="segunda-feira">Segunda-feira</option>
+          <option value="terca-feira">Terça-feira</option>
+          <option value="quarta-feira">Quarta-feira</option>
+          <option value="quinta-feira">Quinta-feira</option>
+          <option value="sexta-feira">Sexta-feira</option>
+          <option value="sabado">Sábado</option>
+          <option value="domingo">Domingo</option>
+          <option value="todos-os-dias">Todos os dias</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="timeInput">Horário</label>
+        <input type="time" id="timeInput" name="timeInput" value="08:00" required>
+      </div>
+
+      <div class="switch-group">
+        <span class="switch-label">Ativar Notificações</span>
+        <div class="toggle-switch on" id="notifToggle"
+             role="switch" aria-checked="true" tabindex="0"
+             onclick="toggleSwitch()"
+             onkeydown="if(event.key==='Enter'||event.key===' ')toggleSwitch()"></div>
+      </div>
+
+      <div class="nav-buttons">
+        <button type="button" class="btn-prev" onclick="goToScreen(3)">← Voltar</button>
+        <button type="submit" class="btn-next">Confirmar →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ╔════════ TELA 5: CONFIRMAÇÃO ════════╗ -->
+<div id="screen5" class="screen">
+  <div class="screen-content">
+    <div class="confirmation-content">
+      <div class="success-icon" aria-hidden="true">✓</div>
+
+      <div class="confirmation-text">
+        <h2>Tudo pronto! <em class="heart-em">♡</em></h2>
+        <p>Sua agenda foi configurada com sucesso.</p>
+        <p>Você receberá a mensagem de Voz do Anjo no dia e hora marcados.</p>
+        <p class="small">Fique atento às notificações. A voz do anjo chega para confortar seu coração.</p>
+      </div>
+
+      <div class="random-player">
+        <div class="player-title">🎧 Ouça uma mensagem agora</div>
+        <audio id="audioPlayer" controls aria-label="Mensagem de áudio"></audio>
+        <div id="noAudioMsg">Nenhum áudio disponível no momento.</div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-prev" onclick="goToScreen(1)">← Voltar ao Início</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /#app -->
+
+<script>
+let isTransitioning = false;
+
+function goToScreen(n) {
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  const current = document.querySelector('.screen.active');
+  const target = document.getElementById('screen' + n);
+  if (!target) { isTransitioning = false; return; }
+
+  // Fade-out da tela atual
+  if (current && current !== target) {
+    current.style.opacity = '0';
+    current.style.transform = 'translateY(-20px)';
+
+    setTimeout(() => {
+      current.classList.remove('active');
+      current.style.opacity = '';
+      current.style.transform = '';
+
+      // Mostra a nova tela
+      target.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+
+      setTimeout(() => { isTransitioning = false; }, 600);
+    }, 300);
+  } else {
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setTimeout(() => { isTransitioning = false; }, 600);
+  }
+}
+
+function toggleSwitch() {
+  const toggle = document.getElementById('notifToggle');
+  toggle.classList.toggle('on');
+  toggle.setAttribute('aria-checked', toggle.classList.contains('on').toString());
+}
+
+function saveAndGoToConfirmation(e) {
+  e.preventDefault();
+  const day = document.getElementById('daySelect').value;
+  const time = document.getElementById('timeInput').value;
+  const notify = document.getElementById('notifToggle').classList.contains('on');
+  localStorage.setItem('agendamento', JSON.stringify({ day, time, notify, date: new Date().toISOString() }));
+  loadAndPlayRandomAudio();
+  goToScreen(5);
+}
+
+function loadAndPlayRandomAudio() {
+  const audios = JSON.parse(localStorage.getItem('audios') || '[]');
+  const player = document.getElementById('audioPlayer');
+  const noMsg = document.getElementById('noAudioMsg');
+  if (audios.length > 0) {
+    const random = audios[Math.floor(Math.random() * audios.length)];
+    player.src = random.data;
+    player.style.display = 'block';
+    noMsg.style.display = 'none';
+  } else {
+    noMsg.style.display = 'block';
+    player.style.display = 'none';
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registrado:', reg.scope))
+      .catch(err => console.warn('SW falhou:', err.message));
+  });
+}
+</script>
+</body>
+</html>
