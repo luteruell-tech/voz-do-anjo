@@ -43,3 +43,5 @@ Voz do Anjo é uma homenagem à **Katia Daniele** — sua voz, seu amor e o cuid
 ---
 
 © 2026 Luteruel Tech
+
+<!-- Deploy test: 2026-06-29T00:09:07Z -->
