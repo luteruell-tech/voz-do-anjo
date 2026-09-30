@@ -12,6 +12,7 @@ Faz o inventário completo de um HD externo, separa os arquivos por tipo e ano e
 4. Escolha **1 - INVENTÁRIO** primeiro. O relatório abre no navegador.
 5. Confira o relatório. Se estiver tudo certo, rode de novo e escolha **2 - ORGANIZAR** (digite `SIM` para confirmar).
 6. Se algo não ficou como você queria, escolha **3 - DESFAZER**.
+7. Depois de conferir, escolha **4 - LIMPAR** (digite `APAGAR`). O lixo e as cópias são **apagados de vez**. Antes de apagar cada cópia, o programa confere de novo se o original existe e se é idêntico. Se não for, a cópia fica.
 
 ## Como o HD fica depois
 
@@ -23,7 +24,12 @@ Faz o inventário completo de um HD externo, separa os arquivos por tipo e ano e
 | `_DUPLICADOS\` | Cópias idênticas (conferidas pelo conteúdo, não só pelo nome). O original fica em `_ORGANIZADO` |
 | `_RELATORIO_HD\` | Relatório (HTML), planilha para Excel e registro dos movimentos (usado no Desfazer) |
 
-Depois de conferir, você mesmo apaga `_LIXO_REVISAR` e `_DUPLICADOS`.
+## Duplicados: como são identificados
+
+- **Cópia de verdade:** mesmo tamanho **e** mesmo conteúdo (impressão digital MD5). Pega até cópias com nome diferente, como `IMG_001 (1).jpg` ou `foto - Copia.jpg`.
+- **Qual fica:** o arquivo com o nome original (sem "cópia", "copy" ou "(1)"), depois o mais antigo.
+- **Mesmo nome, tamanho diferente:** são versões diferentes. Não são mexidos; aparecem numa lista à parte.
+- Planilhas em `_RELATORIO_HD`: `duplicados_*.csv` (o que FICA e cada CÓPIA, com nome, tamanho, data e local) e `mesmo_nome_tamanho_diferente_*.csv`.
 
 ## Observações
 

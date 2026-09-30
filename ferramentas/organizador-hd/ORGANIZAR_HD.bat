@@ -13,12 +13,14 @@ echo.
 echo  1 - INVENTARIO  (so le e gera relatorio - comece por aqui)
 echo  2 - ORGANIZAR   (move os arquivos conforme o relatorio)
 echo  3 - DESFAZER    (devolve tudo ao lugar original)
+echo  4 - LIMPAR      (APAGA DE VEZ lixo e copias duplicadas - use por ultimo)
 echo.
-set /p OP=Escolha 1, 2 ou 3: 
+set /p OP=Escolha 1, 2, 3 ou 4: 
 set MODO=
 if "%OP%"=="1" set MODO=Inventario
 if "%OP%"=="2" set MODO=Organizar
 if "%OP%"=="3" set MODO=Desfazer
+if "%OP%"=="4" set MODO=Limpar
 if "%MODO%"=="" (echo Opcao invalida. & pause & exit /b)
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0OrganizarHD.ps1" -Unidade "%LETRA%" -Modo %MODO%
 echo.
