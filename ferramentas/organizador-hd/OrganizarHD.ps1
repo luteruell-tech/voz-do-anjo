@@ -1,6 +1,7 @@
 ﻿<#
-  ORGANIZADOR DE HD - inventario e organizacao segura
-  - NADA e apagado. Lixo e duplicados vao para pastas de revisao.
+  ORGANIZADOR DE HD - inventario e organizacao segura (QG LUTERUEL TECH)
+  - As gavetas e palavras-chave ficam no arquivo REGRAS.txt (mesma pasta deste script).
+  - Organizar nao apaga nada: lixo vai para RECICLAGEM e copias para DUBLES.
   - Todo movimento e registrado e pode ser desfeito (modo Desfazer).
   Modos:
     Inventario : so le o HD e gera o relatorio (nao mexe em nada)
@@ -27,10 +28,8 @@ $raiz = $raizInfo.FullName.TrimEnd('\', '/') + $sep
 if ($env:SystemDrive -and $raiz -ieq ($env:SystemDrive + '\')) { throw "Por seguranca, nao rode no disco do sistema ($raiz)." }
 
 $dirRel  = Join-Path $raiz '_RELATORIO_HD'
-$dirOrg  = Join-Path $raiz '_ORGANIZADO'
-$dirLixo = Join-Path $raiz '_LIXO_REVISAR'
-$dirDup  = Join-Path $raiz '_DUPLICADOS'
-$pastasNossas = @('_ORGANIZADO', '_LIXO_REVISAR', '_DUPLICADOS')
+$arqRegras = Join-Path $PSScriptRoot 'REGRAS.txt'
+if (-not (Test-Path -LiteralPath $arqRegras)) { throw "Arquivo REGRAS.txt nao encontrado ao lado do script ($arqRegras)." }
 $ignorar = @('$RECYCLE.BIN', 'System Volume Information', '_RELATORIO_HD', 'RECYCLER',
              '.Trashes', '.Spotlight-V100', '.fseventsd', '.TemporaryItems', 'FOUND.000')
 $carimbo = Get-Date -Format 'yyyy-MM-dd_HHmmss'
@@ -67,6 +66,54 @@ function Get-Md5([string]$caminho, [bool]$parcial) {
     } finally { $fs.Dispose(); $md5.Dispose() }
 }
 function Limpar([string]$s) { return ($s -replace '[\\/:*?"<>|]', '_').Trim() }
+
+# texto sem acento, minusculo, com separadores virando espaco
+function Norm([string]$s) {
+    $t = $s.Normalize([Text.NormalizationForm]::FormD) -replace '\p{Mn}', ''
+    return (($t.ToLowerInvariant() -replace '[\\/_\-\.\(\)\[\]\{\},;+]', ' ') -replace '\s+', ' ').Trim()
+}
+
+# ---------- Regras (REGRAS.txt) ----------
+function Nova-Regra([string]$dest, [string]$lista) {
+    $kws = New-Object System.Collections.Generic.List[string]; $exts = New-Object System.Collections.Generic.List[string]
+    foreach ($x in $lista.Split(',')) {
+        $x = $x.Trim(); if (-not $x) { continue }
+        if ($x.StartsWith('*.')) { $exts.Add($x.Substring(1).ToLowerInvariant()) }
+        else {
+            $n = Norm $x
+            if ($n) { if ($n.Length -ge 6) { $kws.Add([regex]::Escape($n)) } else { $kws.Add([regex]::Escape($n) + '(?![a-z0-9])') } }
+        }
+    }
+    $rx = $null
+    if ($kws.Count) { $rx = New-Object regex ('(?<![a-z0-9])(' + ($kws -join '|') + ')') }
+    return [pscustomobject]@{ Destino = $dest; Regex = $rx; Exts = $exts }
+}
+$regras = @{ FIXAS = @{}; PROJETOS = New-Object System.Collections.Generic.List[object]
+             TEMAS = New-Object System.Collections.Generic.List[object]; TIPOS = @{}; PROMPTS = New-Object System.Collections.Generic.List[string] }
+$secao = ''
+foreach ($ln in (Get-Content -LiteralPath $arqRegras -Encoding UTF8)) {
+    $t = $ln.Trim(); if (-not $t -or $t.StartsWith('#')) { continue }
+    if ($t -match '^\[(.+)\]$') { $secao = Norm $matches[1]; continue }
+    if ($secao -like 'separar*') { foreach ($x in $t.Split(',')) { if ($x.Trim()) { $regras.PROMPTS.Add((Norm $x)) } }; continue }
+    $i = $t.IndexOf('='); if ($i -lt 1) { continue }
+    $k = $t.Substring(0, $i).Trim(); $v = $t.Substring($i + 1).Trim()
+    switch ($secao) {
+        'fixas'    { $regras.FIXAS[$k.ToUpperInvariant()] = $v }
+        'projetos' { $regras.PROJETOS.Add((Nova-Regra $k $v)) }
+        'temas'    { $regras.TEMAS.Add((Nova-Regra $k $v)) }
+        'tipos'    { foreach ($x in $v.Split(',')) { $e = $x.Trim().TrimStart('*').TrimStart('.').ToLowerInvariant(); if ($e) { $regras.TIPOS['.' + $e] = $k } } }
+    }
+}
+function Fixa([string]$chave, [string]$padrao) { if ($regras.FIXAS[$chave]) { return $regras.FIXAS[$chave] } return $padrao }
+$nomeQG   = Fixa 'RAIZ' 'QG LUTERUEL TECH'
+$nomeLixo = Fixa 'LIXO' 'RECICLAGEM'
+$nomeDup  = Fixa 'DUPLICADOS' 'DUBLES'
+$gavBagunca   = Fixa 'BAGUNCA' 'DOWNLOADS\GAVETA DA BAGUNCA'
+$gavProgramas = Fixa 'PROGRAMAS' 'PROJETOS\OUTROS PROJETOS E PROGRAMAS'
+$dirOrg  = Join-Path $raiz $nomeQG
+$dirLixo = Join-Path $dirOrg $nomeLixo
+$dirDup  = Join-Path $dirOrg $nomeDup
+$pastasNossas = @($nomeQG)
 
 # =====================================================================
 # DESFAZER
@@ -216,7 +263,7 @@ function Motivo-Lixo([IO.FileInfo]$f) {
 # Pastas que precisam ficar inteiras (programas, projetos, jogos, catalogos)
 $marcadores = @('.git', '.svn', 'package.json', 'pom.xml', 'build.gradle', 'cmakelists.txt', 'cargo.toml',
                 'composer.json', 'manage.py', 'go.mod', 'gemfile', 'manifest.db', 'autorun.inf', 'steam_api.dll', 'unins000.exe')
-$marcadoresExt = @('.sln', '.csproj', '.vcxproj', '.xcodeproj', '.lrcat', '.aep', '.prproj', '.veg', '.als', '.flp', '.cpr')
+$marcadoresExt = @('.vbox', '.vmx', '.sln', '.csproj', '.vcxproj', '.xcodeproj', '.lrcat', '.aep', '.prproj', '.veg', '.als', '.flp', '.cpr')
 function Motivo-Protegida($arqs, $dirs) {
     $dll = 0; $exe = $false
     foreach ($x in $dirs) { if ($marcadores -contains $x.Name.ToLower()) { return "contem $($x.Name)" } }
@@ -262,10 +309,12 @@ while ($pilha.Count -gt 0) {
     foreach ($pn in $pastasNossas) { if ($relD.StartsWith($pn + $sep, [StringComparison]::OrdinalIgnoreCase)) { $dentroNossa = $true } }
 
     if (-not $prot -and $relD -ne '' -and -not $dentroNossa) {
-        $m = Motivo-Protegida $arqs $subs
+        $proj = $null; $nd = Norm $d.Name
+        foreach ($r in $regras.PROJETOS) { if ($r.Regex -and $r.Regex.IsMatch($nd)) { $proj = $r.Destino; break } }
+        if ($proj) { $m = "projeto $proj" } else { $m = Motivo-Protegida $arqs $subs }
         if ($m) {
             $prot = $d.FullName
-            $protegidas.Add([pscustomobject]@{ Caminho = $d.FullName; Nome = $d.Name; Motivo = $m; Tamanho = [int64]0; Arquivos = 0 })
+            $protegidas.Add([pscustomobject]@{ Caminho = $d.FullName; Nome = $d.Name; Motivo = $m; Projeto = $proj; Tamanho = [int64]0; Arquivos = 0 })
         }
     }
 
@@ -288,7 +337,9 @@ while ($pilha.Count -gt 0) {
             Lixo         = $(if ($prot) { '' } else { Motivo-Lixo $f })
             PastaProtegida = $(if ($prot) { Rel $prot } else { '' })
             JaOrganizado = $dentroNossa
-            Zona         = $(if ($dentroNossa) { ($relD -split '[\\/]')[0] } else { '' })
+            Zona         = $(if ($dentroNossa) { ($relD -split '[\\/]')[1] } else { '' })
+            Gaveta       = ''
+            Regra        = ''
             Duplicado    = ''
             GrupoDup     = 0
             Referencia   = ''
@@ -314,7 +365,7 @@ Write-Host "Arquivos encontrados: $($arquivos.Count)" -ForegroundColor Green
 # =====================================================================
 
 $candidatos = $arquivos | Where-Object { -not $_.Lixo -and -not $_.PastaProtegida -and $_.TamanhoBytes -gt 0 -and
-                                         $_.Zona -ne '_LIXO_REVISAR' -and $_.Zona -ne '_DUPLICADOS' } |
+                                         $_.Zona -ne $nomeLixo -and $_.Zona -ne $nomeDup } |
               Group-Object TamanhoBytes | Where-Object { $_.Count -gt 1 }
 $gruposDup = New-Object System.Collections.Generic.List[object]
 $gid = 0
@@ -355,29 +406,91 @@ function Destino-Livre([string]$alvo) {
     [void]$usados.Add($t); return $t
 }
 
+function Segmentos([string]$p) { if (-not $p) { return @() } return @($p -split '[\\/]' | Where-Object { $_ }) }
+function Montar([string[]]$partes) {
+    $d = $dirOrg; $ult = ''
+    foreach ($pt in $partes) {
+        foreach ($x in (Segmentos $pt)) {
+            $nx = Norm $x; if (-not $nx -or $nx -eq $ult) { continue }
+            $d = Join-Path $d (Limpar $x); $ult = $nx
+        }
+    }
+    return $d
+}
+$rxPrompt = New-Object regex '(?<![a-z0-9])prompts?(?![a-z0-9])'
+# decide a gaveta: 1) projeto  2) tema  3) tipo de arquivo  4) gaveta da bagunca
+function Achar-Gaveta([string]$pastaRel, [string]$nome, [string]$ext, [int]$ano) {
+    $segs = @(Segmentos $pastaRel)
+    $texto = Norm ($pastaRel + ' ' + $nome)
+    foreach ($lista in @($regras.PROJETOS, $regras.TEMAS)) {
+        foreach ($r in $lista) {
+            $porExt = $ext -and ($r.Exts -contains $ext)
+            $m = $null; if ($r.Regex) { $m = $r.Regex.Match($texto) }
+            if (-not $porExt -and -not ($m -and $m.Success)) { continue }
+            # mantem as subpastas abaixo da pasta que deu o match (ex.: cliente/processo)
+            $resto = @(); $achou = $false
+            if ($m -and $m.Success) {
+                for ($k = 0; $k -lt $segs.Count; $k++) {
+                    if ($r.Regex.IsMatch((Norm $segs[$k]))) { $resto = @($segs | Select-Object -Skip ($k + 1)); $achou = $true; break }
+                }
+            }
+            if (-not $achou -and $segs.Count) { $resto = @($segs[$segs.Count - 1]) }
+            $extra = @()
+            if ($regras.PROMPTS -contains (Norm @(Segmentos $r.Destino)[0])) {
+                if ($rxPrompt.IsMatch((Norm $nome))) { $extra = @('PROMPTS') } else { $extra = @('RESULTADOS') }
+            }
+            $pal = $(if ($porExt) { "*$ext" } else { $m.Value })
+            return [pscustomobject]@{ Dir = (Montar (@($r.Destino) + $extra + $resto)); Tipo = 'regra'; Regra = "$($r.Destino) (palavra: $pal)" }
+        }
+    }
+    if ($ext -and $regras.TIPOS.ContainsKey($ext)) {
+        $dest = $regras.TIPOS[$ext].Replace('{ANO}', [string]$ano)
+        $pai = @(); if ($segs.Count) { $pai = @($segs[$segs.Count - 1]) }
+        return [pscustomobject]@{ Dir = (Montar (@($dest) + $pai)); Tipo = 'tipo'; Regra = "tipo de arquivo ($ext)" }
+    }
+    return [pscustomobject]@{ Dir = (Montar (@($gavBagunca) + $segs)); Tipo = 'bagunca'; Regra = 'nao identificado - para voce revisar' }
+}
+function Gaveta-De([string]$caminho) {
+    if (-not $caminho.StartsWith($dirOrg, [StringComparison]::OrdinalIgnoreCase)) { return '' }
+    $sg = @(Segmentos ($caminho.Substring($dirOrg.Length)))
+    return (@($sg | Select-Object -First 2) -join '\')
+}
+
 $movPastas = New-Object System.Collections.Generic.List[object]
 foreach ($pp in $protegidas) {
-    $alvo = Destino-Livre (Join-Path (Join-Path $dirOrg 'Programas_e_Projetos') (Limpar $pp.Nome))
+    $relPai = Rel ([IO.Path]::GetDirectoryName($pp.Caminho.TrimEnd('\', '/')))
+    if ($pp.Projeto) { $base = Montar @($pp.Projeto); $pp | Add-Member -Force NoteProperty Regra "projeto $($pp.Projeto)" }
+    else {
+        $g = Achar-Gaveta $relPai $pp.Nome '' 0
+        if ($g.Tipo -eq 'regra') { $base = $g.Dir; $pp | Add-Member -Force NoteProperty Regra $g.Regra }
+        else { $base = Montar @($gavProgramas); $pp | Add-Member -Force NoteProperty Regra $pp.Motivo }
+    }
+    $alvo = Destino-Livre (Join-Path $base (Limpar $pp.Nome))
     $pp | Add-Member -Force NoteProperty Destino $alvo
     $movPastas.Add($pp)
 }
 $mapaProt = @{}; foreach ($pp in $protegidas) { $mapaProt[(Rel $pp.Caminho)] = $pp.Destino }
 
 foreach ($a in $arquivos) {
-    if ($a.JaOrganizado) { $a.Acao = 'Manter (ja organizado)'; continue }
-    if ($a.PastaProtegida) { $a.Acao = 'Mover junto com a pasta protegida'; $a.Destino = $mapaProt[$a.PastaProtegida]; continue }
+    if ($a.JaOrganizado) { $a.Acao = 'Manter (ja organizado)'; $a.Gaveta = Gaveta-De $a.Caminho; continue }
+    if ($a.PastaProtegida) {
+        $a.Acao = 'Mover junto com a pasta inteira'; $a.Destino = $mapaProt[$a.PastaProtegida]
+        $a.Gaveta = Gaveta-De $a.Destino; $a.Regra = 'pasta inteira: ' + $a.PastaProtegida; continue
+    }
     if ($a.Lixo) {
+        $a.Gaveta = $nomeLixo; $a.Regra = 'lixo: ' + $a.Lixo
         $a.Acao = 'Lixo p/ revisar'
         $a.Destino = Destino-Livre (Join-Path (Join-Path $dirLixo (Limpar $a.Lixo)) (Rel $a.Caminho)); continue
     }
     if ($a.Duplicado) {
+        $a.Gaveta = $nomeDup; $a.Regra = $a.Duplicado
         $a.Acao = 'Duplicado p/ revisar'
         $a.Destino = Destino-Livre (Join-Path $dirDup (Rel $a.Caminho)); continue
     }
-    $alvoDir = Join-Path (Join-Path $dirOrg $a.Categoria) ([string]$a.Ano)
-    if ($a.Pasta -ne '') { $alvoDir = Join-Path $alvoDir (Limpar (Split-Path $a.Pasta -Leaf)) }
+    $g = Achar-Gaveta $a.Pasta $a.Nome $a.Extensao $a.Ano
     $a.Acao = 'Organizar'
-    $a.Destino = Destino-Livre (Join-Path $alvoDir $a.Nome)
+    $a.Destino = Destino-Livre (Join-Path $g.Dir $a.Nome)
+    $a.Gaveta = Gaveta-De $a.Destino; $a.Regra = $g.Regra
 }
 
 # onde o original vai ficar (usado no Limpar para conferir antes de apagar a copia)
@@ -392,7 +505,7 @@ foreach ($g in $gruposDup) {
 [void][IO.Directory]::CreateDirectory($dirRel)
 $encCsv = $(if ($PSVersionTable.PSVersion.Major -ge 6) { 'utf8BOM' } else { 'UTF8' })
 $csvInv = Join-Path $dirRel "inventario_$carimbo.csv"
-$arquivos | Select-Object Caminho, Pasta, Nome, Extensao, TamanhoBytes, Tamanho, Modificado, Ano, Categoria, Lixo,
+$arquivos | Select-Object Caminho, Pasta, Nome, Extensao, TamanhoBytes, Tamanho, Modificado, Ano, Categoria, Gaveta, Regra, Lixo,
                           PastaProtegida, Duplicado, Acao, Destino |
     Export-Csv -LiteralPath $csvInv -Delimiter ';' -NoTypeInformation -Encoding $encCsv
 
@@ -408,7 +521,7 @@ $linhasDup = foreach ($g in ($gruposDup | Sort-Object Recuperavel -Descending)) 
 @($linhasDup) | Export-Csv -LiteralPath $csvDup -Delimiter ';' -NoTypeInformation -Encoding $encCsv
 
 # mesmo nome com tamanho diferente (provaveis versoes diferentes - so aviso, nao sao movidos como copia)
-$versoes = @($arquivos | Where-Object { -not $_.Lixo -and -not $_.PastaProtegida -and $_.Zona -ne '_LIXO_REVISAR' -and $_.Zona -ne '_DUPLICADOS' } |
+$versoes = @($arquivos | Where-Object { -not $_.Lixo -and -not $_.PastaProtegida -and $_.Zona -ne $nomeLixo -and $_.Zona -ne $nomeDup } |
              Group-Object { $_.Nome.ToLower() } | Where-Object { @($_.Group | Select-Object -ExpandProperty TamanhoBytes -Unique).Count -gt 1 } |
              Sort-Object Count -Descending)
 $csvVer = Join-Path $dirRel "mesmo_nome_tamanho_diferente_$carimbo.csv"
@@ -440,14 +553,30 @@ L "<div class='card'>Duplicados<b>$(Fmt $tDup)</b>$('{0:N0}' -f $dups.Count) c&o
 L "<div class='card'>Pastas protegidas<b>$($protegidas.Count)</b></div>"
 L "<div class='card'>Sem acesso<b>$($erros.Count)</b></div></div>"
 
-L '<h2>Por categoria</h2><table><tr><th>Categoria</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
+L "<h2>Como vai ficar: gavetas do $(Html $nomeQG)</h2><p>Coluna <b>Regra</b> da planilha mostra o motivo de cada arquivo ir para cada gaveta.</p>"
+L '<table><tr><th>Gaveta</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
+foreach ($g in ($arquivos | Where-Object { $_.Gaveta } | Group-Object Gaveta | Sort-Object Name)) {
+    L "<tr><td>$(Html $g.Name)</td><td class='n'>$('{0:N0}' -f $g.Count)</td><td class='n'>$(Fmt (($g.Group | Measure-Object TamanhoBytes -Sum).Sum))</td></tr>"
+}
+L '</table>'
+$bag = @($arquivos | Where-Object { $_.Regra -like 'nao identificado*' })
+L "<h2>Gaveta da bagun&ccedil;a &mdash; $($bag.Count) arquivos n&atilde;o identificados (por extens&atilde;o)</h2>"
+L '<table><tr><th>Extens&atilde;o</th><th class="n">Arquivos</th><th class="n">Tamanho</th><th>Exemplo</th></tr>'
+foreach ($g in ($bag | Group-Object Extensao | Sort-Object Count -Descending | Select-Object -First 60)) {
+    $nm = $g.Name; if (-not $nm) { $nm = '(sem extensao)' }
+    L "<tr><td>$(Html $nm)</td><td class='n'>$($g.Count)</td><td class='n'>$(Fmt (($g.Group | Measure-Object TamanhoBytes -Sum).Sum))</td><td>$(Html (Rel $g.Group[0].Caminho))</td></tr>"
+}
+L '</table>'
+
+L '<h2>Por tipo de arquivo</h2><table><tr><th>Categoria</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
 foreach ($g in ($arquivos | Group-Object Categoria | Sort-Object { ($_.Group | Measure-Object TamanhoBytes -Sum).Sum } -Descending)) {
     $s = ($g.Group | Measure-Object TamanhoBytes -Sum).Sum
     L "<tr><td>$(Html $g.Name)</td><td class='n'>$('{0:N0}' -f $g.Count)</td><td class='n'>$(Fmt $s)</td></tr>"
 }
 L '</table>'
 
-L '<h2>Lixo prov&aacute;vel (vai para _LIXO_REVISAR, n&atilde;o &eacute; apagado)</h2><table><tr><th>Motivo</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
+L "<h2>Lixo prov&aacute;vel (vai para $(Html $nomeLixo), n&atilde;o &eacute; apagado agora)</h2>"
+L '<table><tr><th>Motivo</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
 foreach ($g in ($lixos | Group-Object Lixo | Sort-Object Count -Descending)) {
     L "<tr><td>$(Html $g.Name)</td><td class='n'>$('{0:N0}' -f $g.Count)</td><td class='n'>$(Fmt (($g.Group | Measure-Object TamanhoBytes -Sum).Sum))</td></tr>"
 }
@@ -471,9 +600,9 @@ foreach ($v in ($versoes | Select-Object -First 150)) {
 }
 L '</table>'
 
-L '<h2>Pastas protegidas (programas/projetos &mdash; movidas inteiras, sem desmontar)</h2><table><tr><th>Pasta</th><th>Motivo</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
+L '<h2>Pastas movidas inteiras (projetos/programas &mdash; sem desmontar)</h2><table><tr><th>Pasta</th><th>Motivo</th><th>Vai para</th><th class="n">Arquivos</th><th class="n">Tamanho</th></tr>'
 foreach ($pp in ($protegidas | Sort-Object Tamanho -Descending)) {
-    L "<tr><td>$(Html (Rel $pp.Caminho))</td><td>$(Html $pp.Motivo)</td><td class='n'>$($pp.Arquivos)</td><td class='n'>$(Fmt $pp.Tamanho)</td></tr>"
+    L "<tr><td>$(Html (Rel $pp.Caminho))</td><td>$(Html $pp.Motivo)</td><td>$(Html (Rel $pp.Destino))</td><td class='n'>$($pp.Arquivos)</td><td class='n'>$(Fmt $pp.Tamanho)</td></tr>"
 }
 L '</table>'
 
@@ -496,9 +625,9 @@ if ($erros.Count) {
     L '</table>'
 }
 L '<h2>Como vai ficar</h2><div class="aviso"><ul>'
-L '<li><b>_ORGANIZADO\Categoria\Ano\NomeDaPastaOriginal</b> &mdash; arquivos bons, separados por tipo e ano, mantendo o nome da pasta de origem.</li>'
-L '<li><b>_ORGANIZADO\Programas_e_Projetos</b> &mdash; pastas de programas/projetos movidas inteiras.</li>'
-L '<li><b>_LIXO_REVISAR</b> e <b>_DUPLICADOS</b> &mdash; etapa seguinte: op&ccedil;&atilde;o <b>4 - LIMPAR</b> apaga de vez, conferindo antes que o original existe e &eacute; id&ecirc;ntico.</li>'
+L "<li>Tudo vai para <b>$(Html $nomeQG)</b>, nas gavetas definidas no arquivo <b>REGRAS.txt</b>.</li>"
+L '<li>Projetos e programas s&atilde;o movidos inteiros. Assuntos (advocacia, ciberseguran&ccedil;a etc.) mant&ecirc;m as subpastas originais.</li>'
+L "<li><b>$(Html $nomeLixo)</b> (lixo) e <b>$(Html $nomeDup)</b> (c&oacute;pias) &mdash; depois da confer&ecirc;ncia, op&ccedil;&atilde;o <b>4 - LIMPAR</b> apaga de vez, conferindo antes que o original existe e &eacute; id&ecirc;ntico.</li>"
 L "<li>Planilha completa (abre no Excel): <b>$(Html (Split-Path $csvInv -Leaf))</b> &mdash; colunas A&ccedil;&atilde;o e Destino mostram o plano de cada arquivo.</li>"
 L '</ul></div></body></html>'
 $htmlRel = Join-Path $dirRel "relatorio_$carimbo.html"
