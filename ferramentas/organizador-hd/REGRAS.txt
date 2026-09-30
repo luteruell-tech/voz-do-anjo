@@ -1,0 +1,71 @@
+﻿# =====================================================================
+#  REGRAS DO ORGANIZADOR - QG LUTERUEL TECH
+#
+#  Formato:   PASTA DESTINO = palavra, palavra, *.extensao
+#  - Maiusculas, minusculas e acentos sao ignorados na busca.
+#  - A palavra e procurada no NOME do arquivo e no NOME DAS PASTAS onde ele esta.
+#  - Vale a palavra inteira ("rg" nao pega "org").
+#  - A PRIMEIRA regra que combinar vence: a ordem importa.
+#  - Linhas comecando com # sao comentarios.
+#  Para mudar: edite, salve e rode o INVENTARIO de novo para conferir.
+# =====================================================================
+
+[FIXAS]
+RAIZ       = QG LUTERUEL TECH
+LIXO       = RECICLAGEM
+DUPLICADOS = DUBLES
+BAGUNCA    = DOWNLOADS\GAVETA DA BAGUNÇA
+PROGRAMAS  = PROJETOS\OUTROS PROJETOS E PROGRAMAS
+
+# ---------------------------------------------------------------------
+# PROJETOS: pastas com estes nomes sao movidas INTEIRAS (nao quebram).
+# Arquivos soltos com estes nomes tambem vao para la.
+# ---------------------------------------------------------------------
+[PROJETOS]
+PROJETOS\APP WEB\VOZ DO ANJO      = voz do anjo, vozdoanjo
+PROJETOS\APP WEB\AMARA            = amara
+PROJETOS\APP WEB\A BELA CONQUISTA = bela conquista, belaconquista
+PROJETOS\HTML\LOCATUS             = locatus
+PROJETOS\HTML\ORGANIZAÇÃO PC      = organizacao pc, organizador pc, organizador hd, organizar hd
+PROJETOS\HTML\TERUGAN             = terugan
+
+# ---------------------------------------------------------------------
+# TEMAS: por assunto (nome do arquivo ou das pastas)
+# ---------------------------------------------------------------------
+[TEMAS]
+DOCUMENTOS PESSOAIS\DOCUMENTOS PF = rg, cpf, cnh, identidade, titulo de eleitor, titulo eleitor, certidao, comprovante de residencia, comprovante residencia, imposto de renda, irpf, receita federal, passaporte, reservista, ctps, carteira de trabalho, holerite, contracheque, fgts, inss, nis, pis, esocial, gov br, certificado digital, e cpf, ecpf, *.pfx, *.p12
+ARQUIVOS PESSOAIS\CERTIFICADOS    = certificado, certificados, diploma, historico escolar, declaracao de conclusao
+ARQUIVOS PESSOAIS\RECEITAS        = receita, receitas, receituario, prescricao, exame, exames, laudo, atestado
+
+INSTALADORES INTELIGÊNCIA\VIRTUAL BOX         = virtualbox, virtual box, vbox, vmware, *.vdi, *.vbox, *.ova, *.ovf, *.vmdk, *.vhd, *.vhdx
+INSTALADORES INTELIGÊNCIA\KALI LINUX          = kali
+INSTALADORES INTELIGÊNCIA\INTELIGÊNCIA LOCAL  = ollama, lm studio, lmstudio, gpt4all, llama, llamacpp, llama cpp, koboldcpp, oobabooga, text generation webui, comfyui, stable diffusion, automatic1111, anythingllm, open webui, openwebui, localai, jan ai, whisper, mistral, qwen, deepseek, gemma, phi3, *.gguf, *.safetensors, *.ckpt
+INSTALADORES INTELIGÊNCIA\INTELIGÊNCIA ONLINE = chatgpt, openai, claude, anthropic, gemini, copilot, perplexity, midjourney, cursor, windsurf, grok, manus, lovable, bolt new, notebooklm
+
+LOJAS ONLINE\SHOPEE = shopee
+LOJAS ONLINE\MELI   = mercado livre, mercadolivre, meli, mercado pago, mercadopago
+
+INVESTIGADOR JURÍDICO = investigador, investigacao, osint, auditoria patrimonial, ocultacao de patrimonio, laranja, laranjas, due diligence, localizacao de bens, pesquisa patrimonial, quadro societario
+CIBERSEGURANÇA        = ciberseguranca, cybersecurity, cyber, seguranca da informacao, pentest, pen test, hacking, hacker, nmap, metasploit, burp, wireshark, ctf, exploit, vulnerabilidade, owasp, hashcat, hydra, sqlmap, phishing, red team, blue team
+ADVOCACIA             = advocacia, advogado, oab, peticao, peticoes, procuracao, contestacao, recurso, apelacao, agravo, sentenca, acordao, habeas corpus, jurisprudencia, tribunal, tjsp, tjmg, tjrj, trt, stj, stf, audiencia, notificacao extrajudicial, honorarios, processo, processos, contrato, contratos, parecer, minuta
+
+# ---------------------------------------------------------------------
+# Estas gavetas ganham as subpastas PROMPTS e RESULTADOS
+# (arquivo com "prompt" no nome vai para PROMPTS; o resto para RESULTADOS)
+# ---------------------------------------------------------------------
+[SEPARAR EM PROMPTS E RESULTADOS]
+CIBERSEGURANÇA, INVESTIGADOR JURÍDICO
+
+# ---------------------------------------------------------------------
+# TIPOS: quando nenhum tema combinou, decide pela extensao.
+# {ANO} vira o ano do arquivo. O que sobrar vai para a GAVETA DA BAGUNÇA.
+# ---------------------------------------------------------------------
+[TIPOS]
+ARQUIVOS PESSOAIS\FOTOS\{ANO}                 = jpg, jpeg, heic, heif, raw, cr2, cr3, nef, arw, dng, orf, rw2, jfif
+IMAGEM                                        = png, gif, bmp, webp, tif, tiff, svg, ico, psd, ai, cdr, eps, xd, fig, sketch
+ARQUIVOS PESSOAIS\VÍDEOS\{ANO}                = mp4, mov, avi, mkv, wmv, flv, m4v, 3gp, mpg, mpeg, webm, mts, m2ts, vob
+ARQUIVOS PESSOAIS\MÚSICAS E ÁUDIOS            = mp3, wav, flac, aac, m4a, ogg, wma, opus, amr, aiff
+ARQUIVOS PESSOAIS\DOCUMENTOS                  = pdf, doc, docx, odt, rtf, txt, md, xls, xlsx, xlsm, ods, csv, ppt, pptx, pps, ppsx, odp
+ARQUIVOS PESSOAIS\LIVROS                      = epub, mobi, azw, azw3, djvu
+ARQUIVOS PESSOAIS\EMAILS E CONTATOS           = eml, msg, pst, ost, mbox, vcf
+INSTALADORES INTELIGÊNCIA\OUTROS INSTALADORES = exe, msi, apk, xapk, dmg, pkg, deb, appx, msix, iso

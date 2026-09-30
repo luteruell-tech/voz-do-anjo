@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QG Luteruel Tech</title>
+<style>
+  :root {
+    --bg: #000;
+    --verde: #3dff6e;
+    --verde-2: #29c653;
+    --verde-fraco: rgba(61, 255, 110, .18);
+    --texto: #d7dcd8;
+    --texto-2: #8a948c;
+    --borda: #5b605c;
+    --painel: rgba(0, 8, 2, .72);
+    --alerta: #ffb347;
+    --fonte: "Cascadia Mono", "Consolas", "JetBrains Mono", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--texto); font-family: var(--fonte); overflow: hidden; }
+  body.embed { background: transparent; }
+  #matrix { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  body.embed #matrix { display: none; }
+
+  .tela { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; padding: 2.2vh 2.4vw; gap: 1.8vh; overflow: auto; }
+
+  header { display: flex; align-items: center; gap: 18px; padding-bottom: 1.6vh; border-bottom: 2px solid var(--verde-2); flex-wrap: wrap; }
+  .logo { width: 16px; height: 16px; border: 2px solid var(--verde); transform: rotate(45deg); flex: none; }
+  h1 { margin: 0; font-size: clamp(16px, 1.6vw, 28px); letter-spacing: .32em; color: var(--verde); font-weight: 700; text-shadow: 0 0 10px rgba(61,255,110,.45); }
+  .sub { font-size: clamp(11px, .85vw, 15px); letter-spacing: .28em; color: var(--verde-2); }
+  .direita { margin-left: auto; display: flex; gap: 22px; align-items: center; font-size: clamp(11px, .8vw, 14px); letter-spacing: .15em; color: var(--texto-2); }
+  #relogio { color: var(--verde); font-size: clamp(14px, 1.1vw, 20px); letter-spacing: .12em; }
+  .led { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #555; margin-right: 8px; vertical-align: 1px; }
+  .led.on { background: var(--verde); box-shadow: 0 0 8px var(--verde); }
+  .led.off { background: var(--alerta); box-shadow: 0 0 8px var(--alerta); }
+
+  main { display: grid; grid-template-columns: minmax(230px, 300px) 1fr; gap: 2vw; align-items: start; }
+  .rotulo { font-size: clamp(11px, .8vw, 14px); letter-spacing: .3em; color: var(--verde-2); margin: 0 0 12px; text-transform: uppercase; }
+
+  .grade { display: grid; gap: 12px; }
+  .atalhos .grade { grid-template-columns: 1fr 1fr; }
+  .gavetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.4vw; }
+  .painel { background: var(--painel); border: 1px solid rgba(91,96,92,.55); border-radius: 12px; padding: 16px; backdrop-filter: blur(2px); }
+  .painel .grade { grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); }
+
+  button.bt {
+    all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; min-height: 46px;
+    padding: 9px 14px; border: 1.5px solid var(--borda); border-radius: 9px; background: rgba(0,0,0,.55);
+    color: var(--texto); font-family: var(--fonte); font-size: clamp(11px, .74vw, 14px); letter-spacing: .07em;
+    transition: border-color .15s, box-shadow .15s, color .15s, transform .08s; position: relative; overflow: hidden;
+  }
+  button.bt:hover, button.bt:focus-visible { border-color: var(--verde); color: #fff; box-shadow: 0 0 12px var(--verde-fraco), inset 0 0 12px var(--verde-fraco); }
+  button.bt:active { transform: scale(.97); }
+  .ic { flex: none; width: 16px; height: 16px; border: 1.5px solid var(--texto-2); }
+  .ic.q { border-radius: 3px; }
+  .ic.c { border-radius: 50%; }
+  button.bt:hover .ic { border-color: var(--verde); }
+  .nome { flex: 1; min-width: 0; line-height: 1.25; overflow-wrap: break-word; }
+  .qtd { display: block; font-size: .78em; color: var(--texto-2); letter-spacing: .06em; margin-top: 2px; }
+  .vazia .qtd { color: #5d655f; }
+  button.bt.ok { border-color: var(--verde); color: var(--verde); }
+  button.bt.erro { border-color: var(--alerta); color: var(--alerta); }
+  button.bt.raiz { border-color: var(--verde-2); color: var(--verde); }
+
+  #aviso { position: fixed; left: 50%; bottom: 3vh; transform: translateX(-50%); z-index: 5; background: rgba(0,0,0,.9); border: 1px solid var(--verde-2);
+           color: var(--verde); padding: 10px 18px; border-radius: 8px; font-size: 13px; letter-spacing: .1em; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 92vw; text-align: center; }
+  #aviso.ver { opacity: 1; }
+  #aviso.ruim { border-color: var(--alerta); color: var(--alerta); }
+
+  @media (max-width: 760px) {
+    .gavetas { grid-template-columns: 1fr; }
+    .painel .grade { grid-template-columns: 1fr 1fr; }
+    html, body { overflow: auto; }
+    main { grid-template-columns: 1fr; }
+    .direita { margin-left: 0; width: 100%; justify-content: space-between; }
+    .tela { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #matrix { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="matrix" aria-hidden="true"></canvas>
+<div class="tela">
+  <header>
+    <span class="logo" aria-hidden="true"></span>
+    <h1>QG LUTERUEL TECH</h1>
+    <span class="sub">CENTRAL DE GAVETAS</span>
+    <div class="direita">
+      <span id="hd"><span class="led"></span>HD: VERIFICANDO</span>
+      <span id="relogio">--:--:--</span>
+    </div>
+  </header>
+  <main>
+    <section class="atalhos">
+      <p class="rotulo">Atalhos</p>
+      <div class="grade" id="atalhos"></div>
+    </section>
+    <section>
+      <p class="rotulo">Gavetas</p>
+      <div class="gavetas" id="gavetas"></div>
+    </section>
+  </main>
+</div>
+<div id="aviso" role="status"></div>
+
+<script>
+// ---------- CONFIGURACAO (nome no botao -> pasta dentro de "QG LUTERUEL TECH") ----------
+const ATALHOS = [
+  ['SHOPEE',  'https://seller.shopee.com.br/'],
+  ['BLING',   'https://www.bling.com.br/'],
+  ['GMAIL',   'https://mail.google.com/'],
+  ['DRIVE',   'https://drive.google.com/'],
+  ['CHATGPT', 'https://chatgpt.com/'],
+  ['CLAUDE',  'https://claude.ai/'],
+];
+const SECOES = [
+  ['Pessoal', [
+    ['DOCUMENTOS PF',  'DOCUMENTOS PESSOAIS\\DOCUMENTOS PF'],
+    ['DOCUMENTOS',     'ARQUIVOS PESSOAIS\\DOCUMENTOS'],
+    ['CERTIFICADOS',   'ARQUIVOS PESSOAIS\\CERTIFICADOS'],
+    ['RECEITAS',       'ARQUIVOS PESSOAIS\\RECEITAS'],
+    ['FOTOS',          'ARQUIVOS PESSOAIS\\FOTOS'],
+    ['VÍDEOS',         'ARQUIVOS PESSOAIS\\VÍDEOS'],
+    ['MÚSICAS',        'ARQUIVOS PESSOAIS\\MÚSICAS E ÁUDIOS'],
+    ['LIVROS',         'ARQUIVOS PESSOAIS\\LIVROS'],
+    ['E-MAILS',        'ARQUIVOS PESSOAIS\\EMAILS E CONTATOS'],
+    ['IMAGENS',        'IMAGEM'],
+  ]],
+  ['Inteligência & Sistemas', [
+    ['IA LOCAL',       'INSTALADORES INTELIGÊNCIA\\INTELIGÊNCIA LOCAL'],
+    ['IA ONLINE',      'INSTALADORES INTELIGÊNCIA\\INTELIGÊNCIA ONLINE'],
+    ['VIRTUAL BOX',    'INSTALADORES INTELIGÊNCIA\\VIRTUAL BOX'],
+    ['KALI LINUX',     'INSTALADORES INTELIGÊNCIA\\KALI LINUX'],
+    ['INSTALADORES',   'INSTALADORES INTELIGÊNCIA\\OUTROS INSTALADORES'],
+  ]],
+  ['Jurídico & Segurança', [
+    ['ADVOCACIA',      'ADVOCACIA'],
+    ['INVESTIGADOR',   'INVESTIGADOR JURÍDICO'],
+    ['CIBERSEGURANÇA', 'CIBERSEGURANÇA'],
+  ]],
+  ['Projetos', [
+    ['VOZ DO ANJO',    'PROJETOS\\APP WEB\\VOZ DO ANJO'],
+    ['AMARA',          'PROJETOS\\APP WEB\\AMARA'],
+    ['BELA CONQUISTA', 'PROJETOS\\APP WEB\\A BELA CONQUISTA'],
+    ['LOCATUS',        'PROJETOS\\HTML\\LOCATUS'],
+    ['ORGANIZAÇÃO PC', 'PROJETOS\\HTML\\ORGANIZAÇÃO PC'],
+    ['TERUGAN',        'PROJETOS\\HTML\\TERUGAN'],
+    ['OUTROS',         'PROJETOS\\OUTROS PROJETOS E PROGRAMAS'],
+  ]],
+  ['Lojas', [
+    ['SHOPEE',         'LOJAS ONLINE\\SHOPEE'],
+    ['MERCADO LIVRE',  'LOJAS ONLINE\\MELI'],
+  ]],
+  ['Triagem', [
+    ['QG INTEIRO',     ''],
+    ['BAGUNÇA',        'DOWNLOADS\\GAVETA DA BAGUNÇA'],
+    ['DOWNLOADS',      'DOWNLOADS'],
+    ['RECICLAGEM',     'RECICLAGEM'],
+    ['DUPLICADOS',     'DUBLES'],
+  ]],
+];
+
+// ---------- utilidades ----------
+const params = new URLSearchParams(location.search);
+if (params.get('embed') === '1') document.body.classList.add('embed');
+const chave = s => s.normalize('NFC').toUpperCase().replace(/\//g, '\\');
+const aviso = document.getElementById('aviso');
+let tAviso;
+function avisar(msg, ruim) {
+  aviso.textContent = msg; aviso.classList.toggle('ruim', !!ruim); aviso.classList.add('ver');
+  clearTimeout(tAviso); tAviso = setTimeout(() => aviso.classList.remove('ver'), 2800);
+}
+function fmt(b) {
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
+  while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+  return (i < 2 ? Math.round(b) : b.toFixed(1)) + ' ' + u[i];
+}
+function botao(texto, forma, extra) {
+  const b = document.createElement('button');
+  b.className = 'bt' + (extra ? ' ' + extra : '');
+  b.innerHTML = '<span class="ic ' + forma + '"></span><span class="nome"></span>';
+  b.querySelector('.nome').textContent = texto;
+  return b;
+}
+function piscar(b, cls) { b.classList.add(cls); setTimeout(() => b.classList.remove(cls), 900); }
+async function servidor(rota) {
+  const r = await fetch(rota, { method: 'POST', headers: { 'X-QG': '1' } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.erro || ('HTTP ' + r.status));
+  return j;
+}
+
+// ---------- atalhos ----------
+const boxAt = document.getElementById('atalhos');
+for (const [nome, url] of ATALHOS) {
+  const b = botao(nome, 'c');
+  b.onclick = async () => {
+    try { await servidor('/url?u=' + encodeURIComponent(url)); piscar(b, 'ok'); }
+    catch { window.open(url, '_blank'); }
+  };
+  boxAt.appendChild(b);
+}
+
+// ---------- gavetas ----------
+const boxGav = document.getElementById('gavetas');
+const mapa = new Map();
+for (const [titulo, itens] of SECOES) {
+  const p = document.createElement('div'); p.className = 'painel';
+  p.innerHTML = '<p class="rotulo"></p><div class="grade"></div>';
+  p.querySelector('.rotulo').textContent = titulo;
+  const g = p.querySelector('.grade');
+  for (const [nome, pasta] of itens) {
+    const b = botao(nome, 'q', pasta === '' ? 'raiz' : '');
+    const q = document.createElement('span'); q.className = 'qtd'; q.textContent = '—';
+    b.querySelector('.nome').appendChild(q);
+    b.title = 'Abrir QG LUTERUEL TECH\\' + pasta;
+    b.onclick = async () => {
+      try { await servidor('/abrir?g=' + encodeURIComponent(pasta)); piscar(b, 'ok'); avisar('ABRINDO ' + nome); }
+      catch (e) { piscar(b, 'erro'); avisar(String(e.message).startsWith('HTTP') || e.name === 'TypeError' ? 'SERVIDOR DAS GAVETAS DESLIGADO' : e.message, true); }
+    };
+    mapa.set(chave(pasta), q);
+    g.appendChild(b);
+  }
+  boxGav.appendChild(p);
+}
+
+// ---------- status do HD ----------
+const hd = document.getElementById('hd');
+async function status() {
+  try {
+    const r = await fetch('/status', { cache: 'no-store' });
+    const j = await r.json();
+    if (!j.hd) {
+      hd.innerHTML = '<span class="led off"></span>HD DESCONECTADO';
+      mapa.forEach(q => q.textContent = '—');
+      return;
+    }
+    hd.innerHTML = '<span class="led on"></span>HD ' + (j.unidade || '') + ' CONECTADO';
+    const c = {};
+    for (const k in (j.contagem || {})) c[chave(k)] = j.contagem[k];
+    mapa.forEach((q, k) => {
+      const v = k === '' ? j.total : c[k];
+      const bt = q.closest('button');
+      if (!v) { q.textContent = j.contando ? 'contando…' : 'vazia'; bt.classList.toggle('vazia', !j.contando); return; }
+      bt.classList.toggle('vazia', v.n === 0);
+      q.textContent = v.n === 0 ? 'vazia' : v.n.toLocaleString('pt-BR') + ' arq · ' + fmt(v.b);
+    });
+  } catch {
+    hd.innerHTML = '<span class="led off"></span>SERVIDOR DESLIGADO';
+  }
+}
+status(); setInterval(status, 30000);
+
+// ---------- relogio ----------
+const rel = document.getElementById('relogio');
+function tique() { rel.textContent = new Date().toLocaleTimeString('pt-BR'); }
+tique(); setInterval(tique, 1000);
+
+// ---------- chuva do Matrix ----------
+(() => {
+  const cv = document.getElementById('matrix');
+  if (document.body.classList.contains('embed') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = cv.getContext('2d');
+  const letras = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFZ';
+  let tam, cols, gotas, dpr;
+  function ajustar() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+    tam = Math.max(14, Math.round(innerWidth / 110)) * dpr;
+    cols = Math.ceil(cv.width / tam);
+    gotas = Array.from({ length: cols }, () => Math.random() * -cv.height / tam);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  }
+  ajustar(); addEventListener('resize', ajustar);
+  let ultimo = 0;
+  function quadro(t) {
+    requestAnimationFrame(quadro);
+    if (document.hidden || t - ultimo < 55) return;
+    ultimo = t;
+    ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.font = tam + 'px ' + getComputedStyle(document.body).fontFamily;
+    for (let i = 0; i < cols; i++) {
+      const y = gotas[i] * tam;
+      ctx.fillStyle = Math.random() > .975 ? '#c8ffd6' : 'rgba(61,255,110,.55)';
+      ctx.fillText(letras[(Math.random() * letras.length) | 0], i * tam, y);
+      if (y > cv.height && Math.random() > .975) gotas[i] = 0;
+      gotas[i] += 1;
+    }
+  }
+  requestAnimationFrame(quadro);
+})();
+</script>
+</body>
+</html>
